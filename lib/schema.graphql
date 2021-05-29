@@ -1,0 +1,17 @@
+type CheckIn {
+    location_id: String
+    user_id: String
+    checkin_datetime: AWSDateTime
+}
+
+type Query {
+}
+
+type Mutation {
+    checkin(location_id: String, user_id: String): CheckIn
+}
+
+type Schema {
+    query: Query
+    mutation: Mutation
+}
