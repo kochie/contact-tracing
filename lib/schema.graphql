@@ -5,10 +5,12 @@ type CheckIn {
 }
 
 type Query {
+    get_user_location_history(user_id: String!, from: AWSDateTime, until: AWSDateTime): [CheckIn]
+    get_location_attendees(location_id: String!, from: AWSDateTime, until: AWSDateTime): [CheckIn]
 }
 
 type Mutation {
-    checkin(location_id: String, user_id: String): CheckIn
+    check_in(location_id: String!, user_id: String!): CheckIn
 }
 
 type Schema {

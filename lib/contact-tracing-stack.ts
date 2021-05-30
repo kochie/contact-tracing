@@ -7,6 +7,7 @@ import {
   aws_iam as iam,
   CfnOutput,
 } from "aws-cdk-lib";
+import { GolangFunction } from "aws-lambda-golang-cdk-v2"
 import { Construct } from "constructs";
 import { readFileSync } from "fs"
 import { join } from "path"
@@ -94,7 +95,7 @@ export class ContactTracingStack extends Stack {
     const checkinResolver = new appsync.CfnResolver(this, 'checkinMutationResolver', {
       apiId: api.attrApiId,
       typeName: 'Mutation',
-      fieldName: 'checkin',
+      fieldName: 'check_in',
       dataSourceName: dataSource.name,
       requestMappingTemplate: `{
         "version": "2018-05-29",
@@ -110,6 +111,79 @@ export class ContactTracingStack extends Stack {
       responseMappingTemplate: `$util.toJson($ctx.result)`
     });
     checkinResolver.addDependsOn(api_schema);
+
+    const getUserLocationHistoryResolver = new appsync.CfnResolver(this, 'getUserLocationHistoryQueryResolver', {
+      apiId: api.attrApiId,
+      typeName: 'Query',
+      fieldName: 'get_user_location_history',
+      dataSourceName: dataSource.name,
+      requestMappingTemplate: `{
+        "version": "2018-05-29",
+        "operation":  "Query",
+        "query": {
+          "expression": "user_id = :userId \
+          #if( $ctx.args.from && $ctx.args.until )
+            AND checkin_datetime BETWEEN :from AND :until",
+          #elseif( $ctx.args.from )
+            AND checkin_datetime >= :from",
+          #elseif( $ctx.args.until )
+            AND checkin_datetime <= :until",
+          #else
+            ",
+          #end
+          "expressionValues": {
+            ":userId": $util.dynamodb.toDynamoDBJson($ctx.args.user_id),
+          #if( $ctx.args.from ) 
+            ":from": $util.dynamodb.toDynamoDBJson($ctx.args.from),
+          #end
+          #if( $ctx.args.until ) 
+            ":until": $util.dynamodb.toDynamoDBJson($ctx.args.until),
+          #end
+          }
+        },
+        "index": "index_by_user"
+      }`,
+      responseMappingTemplate: `$util.toJson($ctx.result.items)`
+    });
+    getUserLocationHistoryResolver.addDependsOn(api_schema);
+
+    const getLocationAttendeesResolver = new appsync.CfnResolver(this, 'getLocationAttendeesQueryResolver', {
+      apiId: api.attrApiId,
+      typeName: 'Query',
+      fieldName: 'get_location_attendees',
+      dataSourceName: dataSource.name,
+      requestMappingTemplate: `{
+        "version": "2018-05-29",
+        "operation":  "Query",
+        "query": {
+          "expression": "location_id = :locationId \
+          #if( $ctx.args.from && $ctx.args.until )
+            AND checkin_datetime BETWEEN :from AND :until",
+          #elseif( $ctx.args.from )
+            AND checkin_datetime >= :from",
+          #elseif( $ctx.args.until )
+            AND checkin_datetime <= :until",
+          #else
+            ",
+          #end
+          "expressionValues": {
+            ":locationId": $util.dynamodb.toDynamoDBJson($ctx.args.location_id),
+          #if( $ctx.args.from ) 
+            ":from": $util.dynamodb.toDynamoDBJson($ctx.args.from),
+          #end
+          #if( $ctx.args.until ) 
+            ":until": $util.dynamodb.toDynamoDBJson($ctx.args.until),
+          #end
+          }
+        }
+      }`,
+      responseMappingTemplate: `$util.toJson($ctx.result.items)`
+    });
+    getLocationAttendeesResolver.addDependsOn(api_schema);
+
+    const func = new GolangFunction(this, 'contact-tracing-func', {
+      entry: 'lib/functions/contact_trace/main.go'
+    })
 
     new CfnOutput(this, "api-url", {
       value: api.attrGraphQlUrl
