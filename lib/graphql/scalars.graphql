@@ -1,0 +1,7 @@
+scalar AWSTimestamp
+scalar AWSURL
+scalar AWSDate
+scalar AWSDateTime
+
+directive @aws_api_key on FIELD_DEFINITION | INPUT_OBJECT | OBJECT | ENUM
+directive @aws_cognito_user_pools on FIELD_DEFINITION | INPUT_OBJECT | OBJECT | ENUM_VALUE

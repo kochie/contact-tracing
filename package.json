@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "aws-cdk-lib": "2.0.0-rc.5",
-    "aws-lambda-golang-cdk-v2": "1.0.0",
+    "aws-lambda-golang-cdk-v2": "^0.1.4",
     "constructs": "^10.0.5",
     "source-map-support": "^0.5.16"
   }

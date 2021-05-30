@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"log"
 	"os"
 	"time"
@@ -23,17 +24,79 @@ type Event struct {
 	Degrees int       `json:"degrees"`
 }
 
-type Contact struct {
+type Exposures struct {
+	Users []string `json:"users"`
+	Locations []string `json:"locations"`
 }
 
-type Output struct {
-	Contacts []Contact `json:"contact"`
+type User struct {
+	 UserID string
+	 Locations []Location
+}
+
+type Location struct {
+	LocationId string
+	Timestamp time.Time
+}
+
+type CheckIn struct {
+	UserID string `dynamodbav:"user_id"`
+	LocationID string `dynamodbav:"location_id"`
+	CheckinDatetime time.Time `dynamodbav:"checkin_datetime"`
+}
+
+func GetLocation() () {}
+
+func GetUser(userId, from, until string) (*User, error) {
+	var expression string
+
+	if from != "" && until != "" {
+		expression = fmt.Sprintf(`user_id = %s AND checkin_datetime BETWEEN %s AND %s`, userId, from, until)
+	} else if from == "" {
+		expression = fmt.Sprintf(`user_id = %s AND checkin_datetime <= %s`, userId, until)
+	} else if until == "" {
+		expression = fmt.Sprintf(`user_id = %s AND checkin_datetime >= %s`, userId, from)
+	} else {
+		expression = fmt.Sprintf(`user_id = %s`, userId)
+	}
+
+	paginator := dynamodb.NewQueryPaginator(client, &dynamodb.QueryInput{
+		TableName: aws.String(tableName),
+		KeyConditionExpression: aws.String(expression),
+	})
+	//resp, err := client.Query(context.TODO(), &dynamodb.QueryInput{
+	//	TableName: aws.String(tableName),
+	//	KeyConditionExpression: aws.String(expression),
+	//})
+
+	user := User{}
+	for paginator.HasMorePages() {
+		resp, err := paginator.NextPage(context.TODO())
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range resp.Items {
+			checkin := CheckIn{}
+			err := attributevalue.UnmarshalMap(item, checkin)
+			if err != nil {
+				return nil, err
+			}
+			user.Locations = append(user.Locations, Location{
+				Timestamp: checkin.CheckinDatetime,
+				LocationId: checkin.LocationID,
+			})
+		}
+	}
+
+	return &user, nil
 }
 
 // HandleRequest will contact-trace a user_id throughout a time period
 // and identify all the locations and other users that the user has come
 // into contact with
-func HandleRequest(ctx context.Context, event Event) (*Output, error) {
+func HandleRequest(ctx context.Context, event Event) (*Exposures, error) {
 	resp, err := client.Query(ctx, &dynamodb.QueryInput{
 		TableName: aws.String(tableName),
 		KeyConditionExpression: aws.String(fmt.Sprintf(`
@@ -46,7 +109,7 @@ user_id = %s
 
 	log.Println(resp.Items)
 
-	out := Output{}
+	out := Exposures{}
 	return &out, nil
 }
 

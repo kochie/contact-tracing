@@ -4,9 +4,15 @@ type CheckIn {
     checkin_datetime: AWSDateTime
 }
 
+type Exposures {
+    users: [String]
+    locations: [String]
+}
+
 type Query {
     get_user_location_history(user_id: String!, from: AWSDateTime, until: AWSDateTime): [CheckIn]
     get_location_attendees(location_id: String!, from: AWSDateTime, until: AWSDateTime): [CheckIn]
+    trace_exposure(user_id: String!, from: AWSDateTime, until: AWSDateTime): Exposures
 }
 
 type Mutation {

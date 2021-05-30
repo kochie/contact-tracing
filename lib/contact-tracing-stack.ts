@@ -73,7 +73,7 @@ export class ContactTracingStack extends Stack {
 
     const api_schema = new appsync.CfnGraphQLSchema(this, 'ct-api-schema', {
       apiId: api.attrApiId,
-      definition: readFileSync(join(__dirname, "schema.graphql")).toString()
+      definition: readFileSync(join(__dirname, "graphql/schema.graphql")).toString()
     })
 
     const table_role = new iam.Role(this, 'ItemsDynamoDBRole', {
@@ -182,8 +182,46 @@ export class ContactTracingStack extends Stack {
     getLocationAttendeesResolver.addDependsOn(api_schema);
 
     const func = new GolangFunction(this, 'contact-tracing-func', {
-      entry: 'lib/functions/contact_trace/main.go'
+      entry: 'lib/functions/contact_trace/main.go',
+      environment: {
+        TABLE_NAME: contact_table.tableName
+      },
+      initialPolicy: [
+        new iam.PolicyStatement({
+          actions: ["dynamodb:Query"],
+          effect: iam.Effect.ALLOW,
+          resources: [contact_table.tableArn],
+        }),
+      ]
     })
+    const lambda_role = new iam.Role(this, 'LambdaRole', {
+      assumedBy: new iam.ServicePrincipal('appsync.amazonaws.com'),
+      inlinePolicies: {
+        lambda_access: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            actions: ['lambda:InvokeFunction'],
+            effect: iam.Effect.ALLOW,
+            resources: [func.functionArn]
+          })]
+        })
+      }
+    });
+    const traceExposureLambdaDataSource = new appsync.CfnDataSource(this, 'traceExposureLambdaDataSource', {
+      apiId: api.attrApiId,
+      name: 'TraceExposureDataSource',
+      type: 'AWS_LAMBDA',
+      lambdaConfig: {
+        lambdaFunctionArn: func.functionArn
+      },
+      serviceRoleArn: lambda_role.roleArn
+    })
+    const traceExposureQueryResolver = new appsync.CfnResolver(this, 'traceExposureQueryResolver', {
+      apiId: api.attrApiId,
+      typeName: 'Query',
+      fieldName: 'trace_exposure',
+      dataSourceName: traceExposureLambdaDataSource.name,
+    })
+    traceExposureQueryResolver.addDependsOn(api_schema);
 
     new CfnOutput(this, "api-url", {
       value: api.attrGraphQlUrl
