@@ -1,0 +1,21 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "devDependencies": {
+    "@apollo/client": "^3.3.19",
+    "@types/react": "^17.0.8",
+    "autoprefixer": "^10.2.6",
+    "aws-amplify": "^3.4.3",
+    "next": "^10.2.3",
+    "postcss": "^8.3.0",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "tailwindcss": "^2.1.2"
+  }
+}

@@ -141,9 +141,14 @@ export class ContactTracingStack extends Stack {
           #end
           }
         },
-        "index": "index_by_user"
+        "index": "index_by_user",
+        "limit": $util.defaultIfNull($ctx.args.limit, 20),
+        "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
       }`,
-      responseMappingTemplate: `$util.toJson($ctx.result.items)`
+      responseMappingTemplate: `{
+        "items": $util.toJson($ctx.result.items),
+        "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.result.nextToken, null))
+      }`
     });
     getUserLocationHistoryResolver.addDependsOn(api_schema);
 

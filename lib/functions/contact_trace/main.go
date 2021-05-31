@@ -96,20 +96,26 @@ func GetUser(userId, from, until string) (*User, error) {
 // HandleRequest will contact-trace a user_id throughout a time period
 // and identify all the locations and other users that the user has come
 // into contact with
-func HandleRequest(ctx context.Context, event Event) (*Exposures, error) {
-	resp, err := client.Query(ctx, &dynamodb.QueryInput{
-		TableName: aws.String(tableName),
-		KeyConditionExpression: aws.String(fmt.Sprintf(`
-user_id = %s
-`, event.UserID)),
-	})
+func HandleRequest(ctx context.Context, event interface{}) (*Exposures, error) {
+	eventData := event.(map[string]interface{})
+	arguments := eventData["arguments"].(map[string]interface{})
+	userId := arguments["user_id"].(string)
+	from := arguments["from"].(string)
+	until := arguments["until"].(string)
+
+	user, err := GetUser(userId, from, until)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Println(resp.Items)
-
-	out := Exposures{}
+	locations := make([]string, 0)
+	for _, location := range user.Locations {
+		locations = append(locations, location.LocationId)
+	}
+	out := Exposures{
+		Users: []string{user.UserID},
+		Locations: locations,
+	}
 	return &out, nil
 }
 

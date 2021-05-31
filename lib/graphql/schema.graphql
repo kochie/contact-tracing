@@ -4,13 +4,18 @@ type CheckIn {
     checkin_datetime: AWSDateTime
 }
 
+type Output {
+    items: [CheckIn],
+    nextToken: String
+}
+
 type Exposures {
     users: [String]
     locations: [String]
 }
 
 type Query {
-    get_user_location_history(user_id: String!, from: AWSDateTime, until: AWSDateTime): [CheckIn]
+    get_user_location_history(user_id: String!, from: AWSDateTime, until: AWSDateTime, nextToken: String, limit: Int): Output
     get_location_attendees(location_id: String!, from: AWSDateTime, until: AWSDateTime): [CheckIn]
     trace_exposure(user_id: String!, from: AWSDateTime, until: AWSDateTime): Exposures
 }
