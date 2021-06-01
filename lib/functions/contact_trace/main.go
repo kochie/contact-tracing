@@ -31,7 +31,7 @@ type Exposures struct {
 
 type User struct {
 	 UserID string
-	 Locations []Location
+	 Locations 
 }
 
 type Location struct {

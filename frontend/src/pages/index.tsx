@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react'
 import Link from 'next/link'
 import {Auth} from 'aws-amplify';
-import {useQuery} from "@apollo/client";
+import {useLazyQuery} from "@apollo/client";
 import {GET_USER_LOCATION_HISTORY, Output} from "../queries/get_user_location_history";
 
 const Index = () => {
@@ -80,16 +80,13 @@ const Button = ({link, text}: ButtonProps) => {
 }
 
 const UserTable = () => {
-    const {
+    const [userId, setUserId] = useState("1")
+    const [getUserLocationHistory, {
         loading,
         data,
         error,
         fetchMore
-    } = useQuery<{ get_user_location_history: Output }>(GET_USER_LOCATION_HISTORY, {
-        variables: {
-            user_id: "3"
-        }
-    })
+    }] = useLazyQuery<{ get_user_location_history: Output }>(GET_USER_LOCATION_HISTORY)
 
     // useEffect(() => {
     //     fetchMore({
@@ -113,7 +110,21 @@ const UserTable = () => {
     console.log(loading, data)
     return (
         <div>
-            <button onClick={() => getMoreData()} disabled={data && !data.get_user_location_history.nextToken}>More Data</button>
+            <button
+                className="rounded bg-green-400 hover:bg-green-500 transform-gpu duration-200 transition px-4 py-2 shadow-md disabled:opacity-50 active:bg-green-600 text-white font-bold disabled:cursor-not-allowed"
+                onClick={() => getMoreData()} disabled={data && !data.get_user_location_history.nextToken}>More Data
+            </button>
+            <button
+                className="rounded bg-green-400 hover:bg-green-500 transform-gpu duration-200 transition px-4 py-2 shadow-md disabled:opacity-50 active:bg-green-600 text-white font-bold disabled:cursor-not-allowed"
+                onClick={() => getUserLocationHistory({
+                variables: {
+                    user_id: userId
+                }
+            })}>
+                Get Data
+            </button>
+            <label htmlFor="userId">User Id</label>
+            <input type="number" value={userId} onChange={event => setUserId(event.target.value)} name="userId" id="userId"/>
             <div>
                 Hello
             </div>
@@ -135,7 +146,7 @@ const UserTable = () => {
                             <tr key={checkin.checkin_datetime}>
                                 <td className="bg-green-100 border border-green-700">{checkin.user_id}</td>
                                 <td className="bg-green-100 border border-green-700">{checkin.location_id}</td>
-                                <td className="bg-green-100 border border-green-700">{checkin.checkin_datetime}</td>
+                                <td className="bg-green-100 border border-green-700 px-2">{(new Date(checkin.checkin_datetime)).toLocaleString('en-AU', {timeZone: 'Australia/Melbourne'})}</td>
                             </tr>
                         )
                     }
@@ -143,7 +154,7 @@ const UserTable = () => {
                         <tr key={checkin.checkin_datetime}>
                             <td className="bg-green-200 border border-green-700">{checkin.user_id}</td>
                             <td className="bg-green-200 border border-green-700">{checkin.location_id}</td>
-                            <td className="bg-green-200 border border-green-700">{checkin.checkin_datetime}</td>
+                            <td className="bg-green-200 border border-green-700 px-2">{(new Date(checkin.checkin_datetime)).toLocaleString('en-AU', {timeZone: 'Australia/Melbourne'})}</td>
                         </tr>
                     )
                 })}
