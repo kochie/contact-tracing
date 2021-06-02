@@ -6,6 +6,7 @@ import {
   aws_cognito as cognito,
   aws_iam as iam,
   CfnOutput,
+  Duration,
 } from "aws-cdk-lib";
 import { GolangFunction } from "aws-lambda-golang-cdk-v2"
 import { Construct } from "constructs";
@@ -191,11 +192,13 @@ export class ContactTracingStack extends Stack {
       environment: {
         TABLE_NAME: contact_table.tableName
       },
+      timeout: Duration.seconds(30),
+      memorySize: 1024,
       initialPolicy: [
         new iam.PolicyStatement({
           actions: ["dynamodb:Query"],
           effect: iam.Effect.ALLOW,
-          resources: [contact_table.tableArn],
+          resources: [contact_table.tableArn, `${contact_table.tableArn}/index/index_by_user`],
         }),
       ]
     })
