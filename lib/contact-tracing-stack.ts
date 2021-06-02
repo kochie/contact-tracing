@@ -181,9 +181,14 @@ export class ContactTracingStack extends Stack {
             ":until": $util.dynamodb.toDynamoDBJson($ctx.args.until),
           #end
           }
-        }
+        },
+        "limit": $util.defaultIfNull($ctx.args.limit, 20),
+        "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
       }`,
-      responseMappingTemplate: `$util.toJson($ctx.result.items)`
+      responseMappingTemplate: `{
+        "items": $util.toJson($ctx.result.items),
+        "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.result.nextToken, null))
+      }`
     });
     getLocationAttendeesResolver.addDependsOn(api_schema);
 
