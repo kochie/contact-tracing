@@ -32,7 +32,7 @@ export const TopBar = () => {
               <Link href="/map">Map</Link>
             </div>
           </div>
-          <div className="flex">
+          <div className="flex gap-4">
             {!isAuthenticated ? (
               <>
                 <Button link={"/login"} text={"Login"} />
