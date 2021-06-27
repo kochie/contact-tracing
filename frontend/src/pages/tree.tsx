@@ -1,14 +1,13 @@
-import React, { FormEvent, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLazyQuery } from "@apollo/client";
 import { TRACE_EXPOSURE_FLAT } from "../queries/trace_exposure_flat";
-import { linkRadial, pointer, select, stratify, tree } from "d3";
+import { linkRadial, select, stratify, tree } from "d3";
 import { cloneDeep } from "@apollo/client/utilities";
 import Auth from "@aws-amplify/auth";
 import { TopBar } from "../component/TopBar";
 import SearchBox from "../component/SearchBox";
 
-
-const margin = { top: 10, right: 30, bottom: 30, left: 40 };
+// const margin = { top: 10, right: 30, bottom: 30, left: 40 };
 
 interface Link {
   location_id: string;
@@ -98,8 +97,11 @@ const Trace = () => {
       .join("path")
       .attr(
         "d",
+        // @ts-expect-error
         linkRadial()
+          // @ts-expect-error
           .angle((d) => d.x)
+          // @ts-expect-error
           .radius((d) => d.y)
       )
       .on("mouseover", function (d, i) {
@@ -181,7 +183,10 @@ const Trace = () => {
   return (
     <>
       <TopBar />
-      <SearchBox loading={loading} onSubmit={(userId, from, until) => getData(userId, from, until)}/>
+      <SearchBox
+        loading={loading}
+        onSubmit={(userId, from, until) => getData(userId, from, until)}
+      />
       <div>
         {!loading ? (
           <>

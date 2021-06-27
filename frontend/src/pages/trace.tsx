@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react'
 import {useLazyQuery} from "@apollo/client";
 import {TRACE_EXPOSURE_FLAT} from "../queries/trace_exposure_flat";
-import {forceCenter, forceLink, forceManyBody, forceSimulation, select, SimulationNodeDatum} from 'd3'
+import {forceCenter, forceLink, forceManyBody, forceSimulation, select, SimulationLinkDatum, SimulationNodeDatum} from 'd3'
 import { cloneDeep } from '@apollo/client/utilities';
 import Auth from '@aws-amplify/auth';
 import {TopBar} from '../component/TopBar'
@@ -17,11 +17,15 @@ interface Link {
         target: string
     }
 
+interface Node {
+
+        user_id: string
+    
+}
+
 interface Graph {
     links: Link[]
-    nodes: {
-        user_id: string
-    }[]
+    nodes: Node[]
 }
 
 
@@ -92,9 +96,9 @@ const Trace = () => {
             .style("fill", "#69b3a2")
 
         // Let's list the force we wanna apply on the network
-        const simulation = forceSimulation(graph.nodes)                 // Force algorithm is applied to data.nodes
+        const simulation = forceSimulation<SimulationNodeDatum & Node>(graph.nodes)                 // Force algorithm is applied to data.nodes
             .force("link", forceLink()                               // This force provides links between nodes
-                .id(function (d) {
+                .id(function (d: SimulationNodeDatum & Node) {
                     return d.user_id;
                 })                     // This provide  the id of a node
                 .links(graph.links)                                    // and this the list of links
@@ -107,23 +111,29 @@ const Trace = () => {
         function ticked() {
             link
                 .attr("x1", function (d) {
-                    return d.source.x;
+                    // @ts-expect-error
+                    return d.x;
                 })
                 .attr("y1", function (d) {
+                    // @ts-expect-error
                     return d.source.y;
                 })
                 .attr("x2", function (d) {
+                    // @ts-expect-error
                     return d.target.x;
                 })
                 .attr("y2", function (d) {
+                    // @ts-expect-error
                     return d.target.y;
                 });
 
             node
                 .attr("cx", function (d) {
+                    // @ts-expect-error
                     return d.x;
                 })
                 .attr("cy", function (d) {
+                    // @ts-expect-error
                     return d.y;
                 });
         }
