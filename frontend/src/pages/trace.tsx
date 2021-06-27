@@ -4,7 +4,7 @@ import {TRACE_EXPOSURE_FLAT} from "../queries/trace_exposure_flat";
 import {forceCenter, forceLink, forceManyBody, forceSimulation, select, SimulationLinkDatum, SimulationNodeDatum} from 'd3'
 import { cloneDeep } from '@apollo/client/utilities';
 import Auth from '@aws-amplify/auth';
-import {TopBar} from '../component/TopBar'
+import {TopBar} from '../components/TopBar'
 
 const margin = {top: 10, right: 30, bottom: 30, left: 40}
 // const width = 800

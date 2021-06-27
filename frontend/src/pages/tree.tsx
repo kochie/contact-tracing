@@ -4,8 +4,8 @@ import { TRACE_EXPOSURE_FLAT } from "../queries/trace_exposure_flat";
 import { linkRadial, select, stratify, tree } from "d3";
 import { cloneDeep } from "@apollo/client/utilities";
 import Auth from "@aws-amplify/auth";
-import { TopBar } from "../component/TopBar";
-import SearchBox from "../component/SearchBox";
+import { TopBar } from "../components/TopBar";
+import SearchBox from "../components/SearchBox";
 
 // const margin = { top: 10, right: 30, bottom: 30, left: 40 };
 

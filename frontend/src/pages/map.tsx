@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { TopBar } from "../component/TopBar";
+import { TopBar } from "../components/TopBar";
 import mapbox from "mapbox-gl";
 import { useLazyQuery } from "@apollo/client";
 import { TRACE_EXPOSURE_FLAT } from "../queries/trace_exposure_flat";
 import { cloneDeep } from "@apollo/client/utilities";
-import SearchBox from "../component/SearchBox";
+import SearchBox from "../components/SearchBox";
 
 import "mapbox-gl/dist/mapbox-gl.css";
 

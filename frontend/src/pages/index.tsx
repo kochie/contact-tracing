@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useLazyQuery } from "@apollo/client";
 import { GET_USER_LOCATION_HISTORY } from "../queries/get_user_location_history";
-import { TopBar } from "../component/TopBar";
+import { TopBar } from "../components/TopBar";
 import { Output } from "../queries/common";
 import { Formik } from "formik";
 
