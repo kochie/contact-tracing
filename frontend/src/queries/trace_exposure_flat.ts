@@ -12,6 +12,11 @@ export const TRACE_EXPOSURE_FLAT = gql`
             nodes {
                 user_id
             }
+            locations {
+                latitude
+                longitude
+                location_id
+            }
         }
     } 
 `;

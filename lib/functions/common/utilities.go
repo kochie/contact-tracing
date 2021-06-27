@@ -22,6 +22,8 @@ type CheckIn struct {
 	UserID          string    `dynamodbav:"user_id"`
 	LocationID      string    `dynamodbav:"location_id"`
 	CheckinDatetime time.Time `dynamodbav:"checkin_datetime"`
+	Latitude string `dynamodbav:"latitude"`
+	Longitude string `dynamodbav:"longitude"`
 }
 
 func GetLocationVisitors(locationId, from, until string, ctx context.Context) ([]*CheckIn, error) {

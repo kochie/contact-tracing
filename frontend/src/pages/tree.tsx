@@ -1,11 +1,12 @@
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useLazyQuery } from "@apollo/client";
 import { TRACE_EXPOSURE_FLAT } from "../queries/trace_exposure_flat";
-import { linkRadial, select, stratify, tree } from "d3";
+import { linkRadial, pointer, select, stratify, tree } from "d3";
 import { cloneDeep } from "@apollo/client/utilities";
 import Auth from "@aws-amplify/auth";
 import { TopBar } from "../component/TopBar";
-import { Formik } from "formik";
+import SearchBox from "../component/SearchBox";
+
 
 const margin = { top: 10, right: 30, bottom: 30, left: 40 };
 
@@ -26,6 +27,7 @@ interface Graph {
 const Trace = () => {
   const [runQuery, { data, loading }] = useLazyQuery(TRACE_EXPOSURE_FLAT);
   const svgRef = useRef<SVGSVGElement>(null);
+  const tooltip = useRef<HTMLDivElement>(null);
 
   const [width, setWidth] = useState(800);
   const [height, setHeight] = useState(400);
@@ -41,8 +43,8 @@ const Trace = () => {
     resize();
 
     return () => {
-      window.removeEventListener("resize", resize)
-    }
+      window.removeEventListener("resize", resize);
+    };
   }, []);
 
   useEffect(() => {
@@ -55,6 +57,7 @@ const Trace = () => {
   useEffect(() => {
     if (!data) return;
     if (!svgRef.current) return;
+    if (!tooltip.current) return;
 
     // console.log("hello", data);
     const graph: Graph = cloneDeep(data.trace_exposure_flat);
@@ -71,7 +74,7 @@ const Trace = () => {
       .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
     const treeBuilder = tree<Link>()
-      .size([2 * Math.PI, (Math.min(height, width) / 2) - 10])
+      .size([2 * Math.PI, Math.min(height, width) / 2 - 10])
       .separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth);
 
     const s = strat([
@@ -79,6 +82,10 @@ const Trace = () => {
       ...graph.links,
     ]);
     const root = treeBuilder(s);
+
+    var div = select(tooltip.current)
+      //  .attr("class", "tooltip")
+      .style("opacity", 0);
 
     svg
       .append("g")
@@ -94,7 +101,38 @@ const Trace = () => {
         linkRadial()
           .angle((d) => d.x)
           .radius((d) => d.y)
-      );
+      )
+      .on("mouseover", function (d, i) {
+        select(this).transition().duration(100).attr("stroke-width", 3);
+        div.transition().duration(100).style("opacity", 1);
+        // mouse(this)
+        // console.log(i)
+
+        div
+          .html(() => {
+            const x = graph.links.find(
+              (link) =>
+                link.source === i.source.id && link.target === i.target.id
+            );
+            // console.log(Date.parse(x.time).toLocaleString('en'))
+
+            return (
+              "<div>Location ID: " +
+              x.location_id +
+              "</div><div>DateTime: " +
+              new Date(x.time).toLocaleString("en-AU", {
+                timeZone: "Australia/Melbourne",
+              }) +
+              "</div>"
+            );
+          })
+          .style("left", d.pageX + 10 + "px")
+          .style("top", d.pageY - 15 + "px");
+      })
+      .on("mouseout", function (d, i) {
+        select(this).transition().duration(200).attr("stroke-width", 1.5);
+        div.transition().duration(200).style("opacity", 0);
+      });
 
     svg
       .append("g")
@@ -109,7 +147,21 @@ const Trace = () => {
             `
       )
       .attr("fill", (d) => (d.children ? "#555" : "#999"))
-      .attr("r", 2.5);
+      .attr("r", 2.5)
+      .on("mouseover", function (d, i) {
+        select(this).transition().duration(100).attr("r", 5);
+        div.transition().duration(100).style("opacity", 1);
+        // mouse(this)
+        // console.log(i)
+        div
+          .html("User ID: " + i.id)
+          .style("left", d.pageX + 10 + "px")
+          .style("top", d.pageY - 15 + "px");
+      })
+      .on("mouseout", function (d, i) {
+        select(this).transition().duration(200).attr("r", 2.5);
+        div.transition().duration(200).style("opacity", 0);
+      });
 
     return () => {
       svg.selectAll("*").remove();
@@ -129,109 +181,16 @@ const Trace = () => {
   return (
     <>
       <TopBar />
+      <SearchBox loading={loading} onSubmit={(userId, from, until) => getData(userId, from, until)}/>
       <div>
-        <div className="flex justify-center p-4 bg-gray-600 fixed rounded-br-lg">
-          <div>
-            <Formik
-              initialValues={{
-                userId: "",
-                fromTime: "00:00",
-                untilTime: "00:00",
-                fromDate: "2021-05-20",
-                untilDate: "2021-05-30",
-              }}
-              onSubmit={({
-                userId,
-                fromTime,
-                untilTime,
-                fromDate,
-                untilDate,
-              }) => {
-                const from = new Date(
-                  `${fromDate}${fromTime ? "T" : ""}${fromTime}`
-                ).toJSON();
-                const until = new Date(
-                  `${untilDate}${untilTime ? "T" : ""}${untilTime}`
-                ).toJSON();
-                getData(userId, from, until);
-              }}
-            >
-              {({
-                values,
-                errors,
-                touched,
-                handleChange,
-                handleBlur,
-                handleSubmit,
-                isSubmitting,
-              }) => (
-                <form onSubmit={handleSubmit}>
-                  <label htmlFor="userId" className="text-white ml-2">
-                    User Id
-                  </label>
-                  <div className="m-2 p-4 rounded bg-white">
-                    <input
-                      type="number"
-                      id="userId"
-                      name="userId"
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      value={values.userId}
-                      required
-                    />
-                  </div>
-                  <label htmlFor="fromTime" className="text-white ml-2">
-                    From
-                  </label>
-                  <div className="m-2 p-4 rounded bg-white">
-                    <input
-                      type="time"
-                      name="fromTime"
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      value={values.fromTime}
-                    />
-                    <input
-                      type="date"
-                      name="fromDate"
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      value={values.fromDate}
-                    />
-                  </div>
-                  <label htmlFor="untilTime" className="text-white ml-2">
-                    Until
-                  </label>
-                  <div className="m-2 p-4 rounded bg-white">
-                    <input
-                      type="time"
-                      name="untilTime"
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      value={values.untilTime}
-                    />
-                    <input
-                      type="date"
-                      name="untilDate"
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      value={values.untilDate}
-                    />
-                  </div>
-                  <div className="rounded m-2 mt-10 text-white text-center cursor-pointer">
-                    <button type="submit" className="w-full">
-                      <div className="bg-gray-500 p-4 active:bg-gray-600 shadow-lg hover:bg-gray-800 w-full rounded">
-                        Get Data
-                      </div>
-                    </button>
-                  </div>
-                </form>
-              )}
-            </Formik>
-          </div>
-        </div>
         {!loading ? (
-          <svg width={width} height={height} ref={svgRef} />
+          <>
+            <svg width={width} height={height} ref={svgRef} />
+            <div
+              ref={tooltip}
+              className="absolute text-center p-1 bg-gray-400 text-white rounded pointer-events-none"
+            />
+          </>
         ) : (
           <div className="w-full text-center h-36 font-extrabold text-4xl transform-gpu translate-y-1/2">
             Loading

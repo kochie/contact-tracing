@@ -25,6 +25,12 @@ type Location {
     visitors: [User]
 }
 
+type LocationFlat {
+    location_id: String
+    latitude: String
+    longitude: String
+}
+
 type Node {
     user_id: String
 }
@@ -34,11 +40,14 @@ type Link {
     target: String
     time: String
     location_id: String
+    latitude: String
+    longitude: String
 }
 
 type Flat {
     nodes: [Node]
     links: [Link]
+    locations: [LocationFlat]
 }
 
 type Query {

@@ -15,13 +15,14 @@ import {GolangFunction} from "aws-lambda-golang-cdk-v2";
 import {Construct} from "constructs";
 import {readFileSync} from "fs";
 import {join} from "path";
+import {BillingMode} from "aws-cdk-lib/aws-dynamodb";
 
 export class ContactTracingStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
 
         const contact_table = new dynamo.Table(this, "contact-tracing-table", {
-            tableName: "contacts",
+            tableName: "checkins",
             encryption: dynamo.TableEncryption.AWS_MANAGED,
             partitionKey: {
                 name: "location_id",
@@ -31,6 +32,7 @@ export class ContactTracingStack extends Stack {
                 name: "checkin_datetime",
                 type: dynamo.AttributeType.STRING,
             },
+            billingMode: BillingMode.PAY_PER_REQUEST
         });
 
         contact_table.addGlobalSecondaryIndex({
@@ -41,6 +43,15 @@ export class ContactTracingStack extends Stack {
             },
             sortKey: {
                 name: "checkin_datetime",
+                type: dynamo.AttributeType.STRING,
+            },
+        });
+
+        const locations_table = new dynamo.Table(this, "location-data-table", {
+            tableName: "locations",
+            encryption: dynamo.TableEncryption.AWS_MANAGED,
+            partitionKey: {
+                name: "location_id",
                 type: dynamo.AttributeType.STRING,
             },
         });
@@ -321,7 +332,7 @@ export class ContactTracingStack extends Stack {
             this,
             "contact-tracing-flat-func",
             {
-                entry: "lib/functions/contact_trace_flat_workers/main.go",
+                entry: "lib/functions/contact_trace_flat/main.go",
                 vpc: vpc,
                 vpcSubnets: {
                     subnetType: ec2.SubnetType.PRIVATE

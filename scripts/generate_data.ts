@@ -3,8 +3,8 @@ import * as gaussian from 'gaussian'
 export const numberOfUsers = 10_000
 export const numberOfLocations = 1_000
 const averageLocationPerUser = 25
-const startDate = new Date("2021-05-20T00:00:00+10:00")
-const endDate = new Date("2021-05-30T00:00:00+10:00")
+const startDate = new Date("2021-06-01T00:00:00+10:00")
+const endDate = new Date("2021-06-30T00:00:00+10:00")
 
 function randomDate(start: Date, end: Date) {
     return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
@@ -25,6 +25,18 @@ export function generateCheckins() {
         checkins.push(...locations)
     }
     return checkins
+}
+
+export function generateLocationGeoData() {
+    const center = [-37.7887223, 145.2198811]
+
+    const lat = gaussian(center[0], 2)
+    const long = gaussian(center[1], 2)
+    return Array.from({length: numberOfLocations}, (_, i) => ({
+        location_id: i + 1,
+        latitude: lat.ppf(Math.random()),
+        longitude: long.ppf(Math.random())
+    }))
 }
 
 function getRandomInt(min: number, max: number) {

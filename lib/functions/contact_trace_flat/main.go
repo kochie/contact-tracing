@@ -20,6 +20,12 @@ type Location struct {
 	Visitors   []*User   `json:"visitors"`
 }
 
+type LocationFlat struct {
+	LocationId string `json:"location_id"`
+	Latitude   string `json:"latitude"`
+	Longitude  string `json:"longitude"`
+}
+
 type Node struct {
 	UserId string `json:"user_id"`
 }
@@ -32,8 +38,9 @@ type Link struct {
 }
 
 type Output struct {
-	Nodes []*Node `json:"nodes"`
-	Links []*Link `json:"links"`
+	Nodes     []*Node         `json:"nodes"`
+	Links     []*Link         `json:"links"`
+	Locations []*LocationFlat `json:"locations"`
 }
 
 func HandleRequest(ctx context.Context, event interface{}) (*Output, error) {
@@ -59,8 +66,9 @@ func HandleRequest(ctx context.Context, event interface{}) (*Output, error) {
 	stack := []*User{&rootUser}
 
 	output := Output{
-		Links: make([]*Link, 0),
-		Nodes: make([]*Node, 0),
+		Links:     make([]*Link, 0),
+		Nodes:     make([]*Node, 0),
+		Locations: make([]*LocationFlat, 0),
 	}
 
 	for len(stack) > 0 {
@@ -84,10 +92,13 @@ func HandleRequest(ctx context.Context, event interface{}) (*Output, error) {
 
 		for _, checkin := range checkins {
 			locationID := checkin.LocationID
+			latitude := checkin.Latitude
+			longitude := checkin.Longitude
 			if _, ok := seenLocations[locationID]; ok {
 				continue
 			}
 			seenLocations[locationID] = true
+			output.Locations = append(output.Locations, &LocationFlat{LocationId: locationID, Longitude: longitude, Latitude: latitude})
 
 			f := checkin.CheckinDatetime.Add(-time.Hour).Format(time.RFC3339)
 			u := checkin.CheckinDatetime.Add(time.Hour).Format(time.RFC3339)
