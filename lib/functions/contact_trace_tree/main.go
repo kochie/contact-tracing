@@ -2,21 +2,25 @@ package main
 
 import (
 	"context"
-	"github.com/kochie/contact-tracing/lib/functions/common"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/kochie/contact-tracing/lib/functions/common"
 )
 
-type Exposures struct {
-	Users     []string `json:"users"`
-	Locations []string `json:"locations"`
+type User struct {
+	UserId   string      `json:"user_id"`
+	From     string      `json:"-"`
+	Contacts []*Location `json:"contacts"`
 }
 
-// HandleRequest will contact-trace a user_id throughout a time period
-// and identify all the locations and other users that the user has come
-// into contact with
-func HandleRequest(ctx context.Context, event interface{}) (*Exposures, error) {
+type Location struct {
+	Time       time.Time `json:"time"`
+	LocationId string    `json:"location_id"`
+	Visitors   []*User   `json:"visitors"`
+}
+
+func HandleRequest(ctx context.Context, event interface{}) (*User, error) {
 	eventData := event.(map[string]interface{})
 	arguments := eventData["arguments"].(map[string]interface{})
 	userId := arguments["user_id"].(string)
@@ -32,19 +36,20 @@ func HandleRequest(ctx context.Context, event interface{}) (*Exposures, error) {
 	seenUsers := make(map[string]bool)
 	seenLocations := make(map[string]bool)
 
-	stack := [][]string{{userId, from}}
+	rootUser := User{UserId: userId, From: from, Contacts: make([]*Location, 0)}
+	stack := []*User{&rootUser}
 
 	for len(stack) > 0 {
-		user := stack[0][0]
-		from = stack[0][1]
+		user := stack[0]
+		from = user.From
 		stack = stack[1:]
 
-		if _, ok := seenUsers[user]; ok {
+		if _, ok := seenUsers[user.UserId]; ok {
 			continue
 		}
 
-		seenUsers[user] = true
-		checkins, err := common.GetUserLocationHistory(user, from, until, ctx)
+		seenUsers[user.UserId] = true
+		checkins, err := common.GetUserLocationHistory(user.UserId, from, until, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -62,30 +67,28 @@ func HandleRequest(ctx context.Context, event interface{}) (*Exposures, error) {
 				return nil, err
 			}
 
+			users := make([]*User, 0)
 			for _, visitor := range visitors {
-				stack = append(stack, []string{visitor.UserID, f})
+				if _, ok := seenUsers[visitor.UserID]; ok {
+					continue
+				}
+
+				u := User{visitor.UserID, checkin.CheckinDatetime.Format(time.RFC3339), make([]*Location, 0)}
+				stack = append(stack, &u)
+				users = append(users, &u)
 			}
+
+			user.Contacts = append(user.Contacts, &Location{
+				checkin.CheckinDatetime,
+				locationID,
+				users,
+			})
 		}
 	}
 
-	users := make([]string, 0)
-	for user := range seenUsers {
-		users = append(users, user)
-	}
-
-	locations := make([]string, 0)
-	for location := range seenLocations {
-		locations = append(locations, location)
-	}
-
-	out := Exposures{
-		Users:     users,
-		Locations: locations,
-	}
-	return &out, nil
+	return &rootUser, nil
 }
 
 func main() {
 	lambda.Start(HandleRequest)
 }
-

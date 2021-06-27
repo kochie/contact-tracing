@@ -9,13 +9,19 @@
   },
   "devDependencies": {
     "@apollo/client": "^3.3.19",
+    "@types/d3": "^6.7.0",
     "@types/react": "^17.0.8",
     "autoprefixer": "^10.2.6",
     "aws-amplify": "^3.4.3",
+    "d3": "^6.7.0",
+    "formik": "^2.2.9",
+    "graphql": "^15.5.1",
+    "lodash": "^4.17.21",
     "next": "^10.2.3",
     "postcss": "^8.3.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "tailwindcss": "^2.1.2"
-  }
+  },
+  "dependencies": {}
 }

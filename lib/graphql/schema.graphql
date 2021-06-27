@@ -14,10 +14,39 @@ type Exposures {
     locations: [String]
 }
 
+type User {
+    user_id: String
+    contacts: [Location]
+}
+
+type Location {
+    time: AWSDateTime
+    location_id: String
+    visitors: [User]
+}
+
+type Node {
+    user_id: String
+}
+
+type Link {
+    source: String
+    target: String
+    time: String
+    location_id: String
+}
+
+type Flat {
+    nodes: [Node]
+    links: [Link]
+}
+
 type Query {
     get_user_location_history(user_id: String!, from: AWSDateTime, until: AWSDateTime, nextToken: String, limit: Int): Output
     get_location_attendees(location_id: String!, from: AWSDateTime, until: AWSDateTime, nextToken: String, limit: Int): Output
     trace_exposure(user_id: String!, from: AWSDateTime, until: AWSDateTime): Exposures
+    trace_exposure_tree(user_id: String!, from: AWSDateTime, until: AWSDateTime): User
+    trace_exposure_flat(user_id: String!, from: AWSDateTime, until: AWSDateTime): Flat
 }
 
 type Mutation {

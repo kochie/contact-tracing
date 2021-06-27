@@ -22,10 +22,12 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.17.0",
     "@types/gaussian": "^1.1.2",
+    "@types/gremlin": "^3.4.6",
     "aws-cdk-lib": "2.0.0-rc.5",
     "aws-lambda-golang-cdk-v2": "^0.1.4",
     "constructs": "^10.0.5",
     "gaussian": "^1.2.0",
+    "gremlin": "^3.5.0",
     "mathjs": "^9.4.1",
     "source-map-support": "^0.5.16"
   }
