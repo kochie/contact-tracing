@@ -8,9 +8,13 @@ export const TopBar = () => {
 
   useEffect(() => {
     (async () => {
-      const session = await Auth.currentSession();
-      console.log(session);
-      if (!!session) setIsAuthenticated(true);
+      try {
+        const session = await Auth.currentSession();
+        console.log(session);
+        if (!!session) setIsAuthenticated(true);
+      } catch (err) {
+        console.error(err);
+      }
     })();
   }, []);
 
