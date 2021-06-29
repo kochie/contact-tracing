@@ -43,7 +43,13 @@ export const TopBar = () => {
                 <Button link={"/signup"} text={"Sign Up"} />
               </>
             ) : (
-              <div className="rounded bg-blue-500 py-2 px-4 shadow-sm transition duration-200 ease-in-out hover:bg-blue-700 transform cursor-pointer text-white">
+              <div
+                className="rounded bg-blue-500 py-2 px-4 shadow-sm transition duration-200 ease-in-out hover:bg-blue-700 transform cursor-pointer text-white"
+                onClick={async () => {
+                  await Auth.signOut();
+                  setIsAuthenticated(false);
+                }}
+              >
                 Sign Out
               </div>
             )}
