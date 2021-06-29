@@ -1,171 +1,202 @@
-import React, {useEffect, useRef, useState} from 'react'
-import {useLazyQuery} from "@apollo/client";
-import {TRACE_EXPOSURE_FLAT} from "../queries/trace_exposure_flat";
-import {forceCenter, forceLink, forceManyBody, forceSimulation, select, SimulationLinkDatum, SimulationNodeDatum} from 'd3'
-import { cloneDeep } from '@apollo/client/utilities';
-import Auth from '@aws-amplify/auth';
-import {TopBar} from '../components/TopBar'
+import React, { useEffect, useRef, useState } from "react";
+import { useLazyQuery } from "@apollo/client";
+import { TRACE_EXPOSURE_FLAT } from "../queries/trace_exposure_flat";
+import {
+  select,
+  drag,
+  hierarchy,
+  forceX,
+  forceY,
+  forceManyBody,
+  forceLink,
+  forceSimulation,
+  stratify,
+} from "d3";
+import { cloneDeep } from "@apollo/client/utilities";
+import Auth from "@aws-amplify/auth";
+import { TopBar } from "../components/TopBar";
+import SearchBox from "../components/SearchBox";
 
-const margin = {top: 10, right: 30, bottom: 30, left: 40}
+// const margin = {top: 10, right: 30, bottom: 30, left: 40}
 // const width = 800
 // const height = 400
 
 interface Link {
-        location_id: string
-        time: string
-        source: string
-        target: string
-    }
+  location_id: string;
+  time: string;
+  source: string;
+  target: string;
+}
 
 interface Node {
-
-        user_id: string
-    
+  user_id: string;
 }
 
 interface Graph {
-    links: Link[]
-    nodes: Node[]
-}
-
-
-const isCyclic = (links: Link[]) => {
-    const visited = new Set<string>()
-    links.forEach(link => {
-        visited.add(link.source)
-        if (visited.has(link.target)) return true
-    })
-
-    return false
+  links: Link[];
+  nodes: Node[];
 }
 
 const Trace = () => {
-    const [runQuery, {data, loading}] = useLazyQuery(TRACE_EXPOSURE_FLAT)
-    const [userId, setUserId] = useState("1")
-    const svgRef = useRef<SVGSVGElement>(null)
+  const [runQuery, { data, loading }] = useLazyQuery(TRACE_EXPOSURE_FLAT);
+  const svgRef = useRef<SVGSVGElement>(null);
 
-    const [width, setWidth] = useState(800)
-    const [height, setHeight] = useState(400)
+  const [width, setWidth] = useState(800);
+  const [height, setHeight] = useState(400);
 
-    const resize = () => {
-        setWidth(window.innerWidth)
-        setHeight(window.innerHeight)
-    }
-    
-    useEffect(() => {
-        window.addEventListener('resize', resize)
-        resize()
-    }, [])
+  const resize = () => {
+    setWidth(window.innerWidth);
+    setHeight(window.innerHeight - 64);
+  };
 
+  useEffect(() => {
+    window.addEventListener("resize", resize);
+    resize();
+  }, []);
 
-    useEffect(() => {
-        (async () => {
-            const session = await Auth.currentSession()
-            console.log(session)
-        })()
-    }, [])
+  useEffect(() => {
+    (async () => {
+      const session = await Auth.currentSession();
+      console.log(session);
+    })();
+  }, []);
 
-    useEffect(() => {
-        if (!data) return
-        if (!svgRef.current) return
+  useEffect(() => {
+    if (!data) return;
+    if (!svgRef.current) return;
 
-        console.log("hello", data)
-        const graph: Graph = cloneDeep(data.trace_exposure_flat)
+    // console.log("hello", data)
+    const graph: Graph = cloneDeep(data.trace_exposure_flat);
 
-        console.log("IS_CYCLIC", isCyclic(graph.links))
+    const strat = stratify<Link>()
+      .id((d) => d.target)
+      .parentId((d) => d.source);
 
-        const svg = select(svgRef.current).attr("width", width)
-            .attr("height", height)
-            .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    const rootUser = graph.nodes[0];
 
-        const link = svg
-            .selectAll("line")
-            .data(graph.links)
-            .enter()
-            .append("line")
-            .style("stroke", "#aaa")
+    const s = strat([
+      { source: "", target: rootUser.user_id, location_id: "", time: "" },
+      ...graph.links,
+    ]);
 
-        // Initialize the nodes
-        const node = svg
-            .selectAll("circle")
-            .data(graph.nodes)
-            .enter()
-            .append("circle")
-            .attr("r", 2)
-            .style("fill", "#69b3a2")
+    // console.log("IS_CYCLIC", isCyclic(graph.links))
 
-        // Let's list the force we wanna apply on the network
-        const simulation = forceSimulation<SimulationNodeDatum & Node>(graph.nodes)                 // Force algorithm is applied to data.nodes
-            .force("link", forceLink()                               // This force provides links between nodes
-                .id(function (d: SimulationNodeDatum & Node) {
-                    return d.user_id;
-                })                     // This provide  the id of a node
-                .links(graph.links)                                    // and this the list of links
-            )
-            .force("charge", forceManyBody())         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
-            .force("center", forceCenter(width / 2, height / 2))     // This force attracts nodes to the center of the svg area
-            .on("tick", ticked);
+    const svg = select(svgRef.current)
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [-width / 2, -height / 2, width, height].join(" "))
+      .append("g");
+    // .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        // // This function is run at each iteration of the force algorithm, updating the nodes position.
-        function ticked() {
-            link
-                .attr("x1", function (d) {
-                    // @ts-expect-error
-                    return d.x;
-                })
-                .attr("y1", function (d) {
-                    // @ts-expect-error
-                    return d.source.y;
-                })
-                .attr("x2", function (d) {
-                    // @ts-expect-error
-                    return d.target.x;
-                })
-                .attr("y2", function (d) {
-                    // @ts-expect-error
-                    return d.target.y;
-                });
+    const dragSimulation = (simulation) => {
+      function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
 
-            node
-                .attr("cx", function (d) {
-                    // @ts-expect-error
-                    return d.x;
-                })
-                .attr("cy", function (d) {
-                    // @ts-expect-error
-                    return d.y;
-                });
-        }
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
 
-        return () => {
-            svg.selectAll("*").remove()
-        }
-    }, [data])
+      function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
 
-    const getData = () => {
-        console.log("AH")
-        runQuery({
+      return drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
+    };
+
+    const root = hierarchy(s);
+    const links = root.links();
+    const nodes = root.descendants();
+
+    // @ts-expect-error
+    const simulation = forceSimulation(nodes)
+      .force(
+        "link",
+        // @ts-expect-error
+        forceLink(links)
+          // @ts-expect-error
+          .id((d) => d.id)
+          .distance(0)
+          .strength(1)
+      )
+      .force("charge", forceManyBody().strength(-60))
+      .force("x", forceX())
+      .force("y", forceY());
+
+    const link = svg
+      .append("g")
+      .attr("stroke", "#999")
+      .attr("stroke-opacity", 0.6)
+      .selectAll("line")
+      .data(links)
+      .join("line");
+
+    const node = svg
+      .append("g")
+      .attr("fill", "#fff")
+      .attr("stroke", "#000")
+      .attr("stroke-width", 1.5)
+      .selectAll("circle")
+      .data(nodes)
+      .join("circle")
+      .attr("fill", (d) => (d.children ? null : "#000"))
+      .attr("stroke", (d) => (d.children ? null : "#fff"))
+      .attr("r", 4.5)
+      // @ts-expect-error
+      .call(dragSimulation(simulation));
+
+    node.append("title").text((d) => "UserID: " + d.data.id);
+
+    simulation.on("tick", () => {
+      link
+        // @ts-expect-error
+        .attr("x1", (d) => d.source.x)
+        // @ts-expect-error
+        .attr("y1", (d) => d.source.y)
+        // @ts-expect-error
+        .attr("x2", (d) => d.target.x)
+        // @ts-expect-error
+        .attr("y2", (d) => d.target.y);
+
+      // @ts-expect-error
+      node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+    });
+
+    // invalidation.then(() => simulation.stop());
+
+    return () => {
+      svg.selectAll("*").remove();
+    };
+  }, [data, height, width]);
+
+  return (
+    <>
+      <TopBar />
+      <SearchBox
+        loading={loading}
+        onSubmit={(userId, from, until) => {
+          runQuery({
             variables: {
-                user_id: userId
-            }
-        })
-    }
+              user_id: userId,
+              from,
+              until,
+            },
+          });
+        }}
+      />
+      <div>
+        {!loading ? <svg width={width} height={height} ref={svgRef} /> : null}
+      </div>
+    </>
+  );
+};
 
-    return (
-        <>
-        <TopBar />
-        <div>
-            <input type="number" value={userId} onChange={event => setUserId(event.target.value)}/>
-            <input type="button" onClick={getData} value="Get Data"/>
-            {!loading ?
-                (
-                    <svg width={width} height={height} ref={svgRef}/>
-                ) : null
-            }
-        </div>
-        </>
-    )
-}
-
-export default Trace
+export default Trace;
