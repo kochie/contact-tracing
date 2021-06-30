@@ -7,7 +7,7 @@ import { Formik } from "formik";
 
 const Index = () => {
   return (
-    <div>
+    <div className="min-h-screen dark:bg-gray-600">
       <TopBar />
       <UserTable />
     </div>
@@ -39,7 +39,7 @@ const UserTable = () => {
   };
 
   return (
-    <div className="flex justify-center">
+    <div className="dark:bg-gray-600 flex justify-center">
       {!!error ? <div>{error.message}</div> : null}
       <div className="rounded-2xl bg-gray-200 p-8 w-max my-4">
         <div className="flex flex-col">

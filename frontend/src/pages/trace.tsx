@@ -178,7 +178,7 @@ const Trace = () => {
   }, [data, height, width]);
 
   return (
-    <>
+    <div>
       <TopBar />
       <SearchBox
         loading={loading}
@@ -195,7 +195,7 @@ const Trace = () => {
       <div>
         {!loading ? <svg width={width} height={height} ref={svgRef} /> : null}
       </div>
-    </>
+    </div>
   );
 };
 

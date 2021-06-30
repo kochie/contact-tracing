@@ -181,7 +181,7 @@ const Trace = () => {
   };
 
   return (
-    <>
+    <div>
       <TopBar />
       <SearchBox
         loading={loading}
@@ -202,7 +202,7 @@ const Trace = () => {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 };
 

@@ -7,7 +7,7 @@ const SignUp = () => {
   const router = useRouter();
 
   return (
-    <div className="w-screen h-screen bg-white flex flex-col justify-center">
+    <div className="w-screen h-screen dark:bg-gray-600 bg-white flex flex-col justify-center">
       <div className="w-96 p-12 m-auto shadow-lg rounded-md bg-gray-200">
         <Formik
           initialValues={{
