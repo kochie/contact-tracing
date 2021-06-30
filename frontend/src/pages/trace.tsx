@@ -11,6 +11,10 @@ import {
   forceLink,
   forceSimulation,
   stratify,
+  scaleOrdinal,
+  schemeSpectral,
+  max,
+  interpolateSinebow,
 } from "d3";
 import { cloneDeep } from "@apollo/client/utilities";
 import Auth from "@aws-amplify/auth";
@@ -116,6 +120,14 @@ const Trace = () => {
     const links = root.links();
     const nodes = root.descendants();
 
+
+    // const scheme = schemeSpectral[11]
+    // console.log(scheme)
+    // const color = scaleOrdinal()
+    // .domain(graph.links.map(d => d.location_id))
+    // .range(interpolateSinebow)
+    // .unknown("#ccc")
+
     // @ts-expect-error
     const simulation = forceSimulation(nodes)
       .force(
@@ -131,13 +143,24 @@ const Trace = () => {
       .force("x", forceX())
       .force("y", forceY());
 
+    const locationMax = max(graph.links.map(l => parseInt(l.location_id)))
+
     const link = svg
       .append("g")
       .attr("stroke", "#999")
-      .attr("stroke-opacity", 0.6)
+      .attr("stroke-opacity", 0.7)
+      .attr("stroke-width", "2")
       .selectAll("line")
       .data(links)
-      .join("line");
+      .join("line")
+      .attr("stroke", (d) => {
+        // console.log(d)
+        const line = graph.links.find(
+          (l) =>
+            l.source === d.source.data.id && l.target === d.target.data.id
+        );
+        return interpolateSinebow(parseInt(line.location_id)/locationMax)
+      });
 
     const node = svg
       .append("g")
