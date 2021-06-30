@@ -187,7 +187,7 @@ const Trace = () => {
         loading={loading}
         onSubmit={(userId, from, until) => getData(userId, from, until)}
       />
-      <div>
+      <div className="overflow-hidden h-screen">
         {!loading ? (
           <>
             <svg width={width} height={height} ref={svgRef} />

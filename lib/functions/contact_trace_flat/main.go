@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -44,8 +45,7 @@ type Output struct {
 }
 
 func HandleRequest(ctx context.Context, event interface{}) (*Output, error) {
-	//log.Println("Starting Request")
-	//start := time.Now()
+	log.Println("Starting Request")
 	eventData := event.(map[string]interface{})
 	arguments := eventData["arguments"].(map[string]interface{})
 	userId := arguments["user_id"].(string)
@@ -83,6 +83,7 @@ func HandleRequest(ctx context.Context, event interface{}) (*Output, error) {
 		seenUsers[user.UserId] = user
 		checkins, err := common.GetUserLocationHistory(user.UserId, from, until, ctx)
 		if err != nil {
+			log.Println("Failed to get user location history: ", err.Error())
 			return nil, err
 		}
 
@@ -104,6 +105,7 @@ func HandleRequest(ctx context.Context, event interface{}) (*Output, error) {
 			u := checkin.CheckinDatetime.Add(time.Hour).Format(time.RFC3339)
 			visitors, err := common.GetLocationVisitors(locationID, f, u, ctx)
 			if err != nil {
+				log.Println("Failed to get location visitor history: ", err.Error())
 				return nil, err
 			}
 

@@ -1,12 +1,9 @@
-import React, { FormEvent, useState } from "react";
-import { Formik } from "formik";
+import React from "react";
 import { Auth } from "aws-amplify";
 import { useRouter } from "next/router";
-import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import { Formik } from "formik";
 
-const Login = ({
-  email,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+const SignUp = () => {
   const router = useRouter();
 
   return (
@@ -14,17 +11,20 @@ const Login = ({
       <div className="w-96 p-12 m-auto shadow-lg rounded-md bg-gray-200">
         <Formik
           initialValues={{
-            email,
+            email: "",
             password: "",
           }}
           onSubmit={async (values, { setSubmitting }) => {
             try {
-              const user = await Auth.signIn({
+              const user = await Auth.signUp({
                 username: values.email,
-                password: values.password
+                password: values.password,
+                attributes: {
+                  email: values.email,
+                },
               });
               console.log(user);
-              await router.push("/");
+              await router.push(`/confirm_signup?email=${values.email}`);
             } catch (error) {
               console.log("error signing in", error);
             } finally {
@@ -44,7 +44,7 @@ const Login = ({
             <form onSubmit={handleSubmit}>
               <div className="my-2 inline-block w-full">
                 <label
-                  htmlFor="email"
+                  htmlFor="username"
                   className="mb-2 text-sm font-bold block"
                 >
                   Email
@@ -57,7 +57,7 @@ const Login = ({
                   id="email"
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  placeholder="Email"
+                  placeholder={"Enter Email"}
                 />
               </div>
               <div className="my-2 inline-block w-full">
@@ -75,13 +75,13 @@ const Login = ({
                   id="password"
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  placeholder="Password"
+                  placeholder={"Password"}
                 />
               </div>
               <div className="mt-8 inline-block w-full">
                 <input
                   type="submit"
-                  value="Login"
+                  value="SignUp"
                   className="w-full rounded bg-green-300 text-white text-center font-bold py-1 cursor-pointer hover:bg-green-400 transform-gpu duration-200 border-2 border-green-500 active:bg-green-700"
                 />
               </div>
@@ -93,10 +93,4 @@ const Login = ({
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return {
-    props: { email: context.query["email"] || "" }
-  };
-};
-
-export default Login;
+export default SignUp;

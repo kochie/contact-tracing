@@ -2,6 +2,10 @@ package common
 
 import (
 	"context"
+	"log"
+	"os"
+	"time"
+
 	"github.com/aws/aws-dax-go/dax"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -9,12 +13,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-xray-sdk-go/xray"
-	"log"
-	"os"
-	"time"
 )
 
 var client *dax.Dax
+
 //var client *dynamodb.Client
 var tableName = os.Getenv("TABLE_NAME")
 
@@ -22,8 +24,8 @@ type CheckIn struct {
 	UserID          string    `dynamodbav:"user_id"`
 	LocationID      string    `dynamodbav:"location_id"`
 	CheckinDatetime time.Time `dynamodbav:"checkin_datetime"`
-	Latitude string `dynamodbav:"latitude"`
-	Longitude string `dynamodbav:"longitude"`
+	Latitude        string    `dynamodbav:"latitude"`
+	Longitude       string    `dynamodbav:"longitude"`
 }
 
 func GetLocationVisitors(locationId, from, until string, ctx context.Context) ([]*CheckIn, error) {
@@ -48,8 +50,8 @@ func GetLocationVisitors(locationId, from, until string, ctx context.Context) ([
 	}
 
 	paginator := dynamodb.NewQueryPaginator(client, &dynamodb.QueryInput{
-		TableName:              aws.String(tableName),
-		KeyConditionExpression: aws.String(expression),
+		TableName:                 aws.String(tableName),
+		KeyConditionExpression:    aws.String(expression),
 		ExpressionAttributeValues: expressionAttributeValues,
 	})
 
@@ -97,10 +99,10 @@ func GetUserLocationHistory(userId, from, until string, ctx context.Context) ([]
 	}
 
 	paginator := dynamodb.NewQueryPaginator(client, &dynamodb.QueryInput{
-		TableName:              aws.String(tableName),
-		KeyConditionExpression: aws.String(expression),
+		TableName:                 aws.String(tableName),
+		KeyConditionExpression:    aws.String(expression),
 		ExpressionAttributeValues: expressionAttributeValues,
-		IndexName: aws.String("index_by_user"),
+		IndexName:                 aws.String("index_by_user"),
 	})
 
 	locations := make([]*CheckIn, 0)
@@ -136,7 +138,7 @@ func init() {
 	}
 
 	err = xray.Configure(xray.Config{
-		ServiceVersion:   "1.2.3",
+		ServiceVersion: "1.2.3",
 	})
 
 	if err != nil {
@@ -144,6 +146,7 @@ func init() {
 	}
 
 	xray.AppendMiddlewares(&cfg.APIOptions)
+	log.Println("Xray middleware applied")
 
 	daxCfg := dax.DefaultConfig()
 	daxCfg.HostPorts = []string{daxEndpoint}
@@ -153,6 +156,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	log.Println("Dynamo Accelerator configured")
+	log.Println("Ready to work.")
 	//client = dynamodb.NewFromConfig(cfg)
 }
