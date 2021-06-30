@@ -78,7 +78,7 @@ const Map = () => {
     });
 
     setMarkers(m);
-  }, [data, map]);
+  }, [data, map, markers]);
 
   return (
     <>
