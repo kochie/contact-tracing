@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLazyQuery } from "@apollo/client";
-import { TRACE_EXPOSURE_FLAT } from "../queries/trace_exposure_flat";
 import {
   select,
   drag,
@@ -20,6 +19,7 @@ import { cloneDeep } from "@apollo/client/utilities";
 import Auth from "@aws-amplify/auth";
 import { TopBar } from "../components/TopBar";
 import SearchBox from "../components/SearchBox";
+import { TRACE_EXPOSURE_OVER_TIME } from "../queries/trace_exposure_over_time";
 
 // const margin = {top: 10, right: 30, bottom: 30, left: 40}
 // const width = 800
@@ -42,9 +42,10 @@ interface Graph {
 }
 
 const Trace = () => {
-  const [runQuery, { data, loading }] = useLazyQuery(TRACE_EXPOSURE_FLAT);
+  const [runQuery, { data, loading }] = useLazyQuery(TRACE_EXPOSURE_OVER_TIME);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  const [step, setStep] = useState(1);
   const [width, setWidth] = useState(800);
   const [height, setHeight] = useState(400);
 
@@ -70,7 +71,17 @@ const Trace = () => {
     if (!svgRef.current) return;
 
     // console.log("hello", data)
-    const graph: Graph = cloneDeep(data.trace_exposure_flat);
+    const exposure_list: Graph[] = cloneDeep(data.trace_exposure_over_time);
+
+    const graph: Graph = {
+      links: [],
+      nodes: [],
+    };
+
+    for (let i = 0; i < step; i++) {
+      graph.links.push(...exposure_list[i].links);
+      graph.nodes.push(...exposure_list[i].nodes);
+    }
 
     const strat = stratify<Link>()
       .id((d) => d.target)
@@ -128,7 +139,7 @@ const Trace = () => {
     // .unknown("#ccc")
 
     // @ts-expect-error
-    const simulation = forceSimulation(nodes)
+    const simulation = forceSimulation()
       .force(
         "link",
         // @ts-expect-error
@@ -144,7 +155,7 @@ const Trace = () => {
 
     const locationMax = max(graph.links.map((l) => parseInt(l.location_id)));
 
-    const link = svg
+    let link = svg
       .append("g")
       .attr("stroke", "#999")
       .attr("stroke-opacity", 0.7)
@@ -160,21 +171,41 @@ const Trace = () => {
         return interpolateSinebow(parseInt(line.location_id) / locationMax);
       });
 
-    const node = svg
+    let node = svg
       .append("g")
       .attr("fill", "#fff")
       .attr("stroke", "#000")
       .attr("stroke-width", 1.5)
       .selectAll("circle")
-      .data(nodes)
-      .join("circle")
-      .attr("fill", (d) => (d.children ? null : "#000"))
-      .attr("stroke", (d) => (d.children ? null : "#fff"))
-      .attr("r", 4.5)
-      // @ts-expect-error
-      .call(dragSimulation(simulation));
 
-    node.append("title").text((d) => "UserID: " + d.data.id);
+    // node.append("title").text((d) => "UserID: " + d.data.id);
+
+    const chart = Object.assign(svg.node(), {
+      update({ nodes, links }) {
+        // Make a shallow copy to protect against mutation, while
+        // recycling old nodes to preserve position and velocity.
+        const old = new Map(node.data().map((d) => [d.id, d]));
+        nodes = nodes.map((d) => Object.assign(old.get(d.id) || {}, d));
+        links = links.map((d) => Object.assign({}, d));
+
+      node = node.data(nodes)
+        .join("circle")
+        .attr("fill", (d) => (d.children ? null : "#000"))
+        .attr("stroke", (d) => (d.children ? null : "#fff"))
+        .attr("r", 4.5)
+        // @ts-expect-error
+        .call(dragSimulation(simulation));
+
+        link = link.data(links, (d) => [d.source, d.target]).join("line");
+
+        simulation.nodes(nodes);
+        simulation.force("link").links(links);
+        simulation.alpha(1).restart().tick();
+        // ticked(); // render now!
+      },
+    });
+
+    chart.update({ nodes, links });
 
     simulation.on("tick", () => {
       link
@@ -194,9 +225,9 @@ const Trace = () => {
     // invalidation.then(() => simulation.stop());
 
     return () => {
-      svg.selectAll("*").remove();
+      svg.remove();
     };
-  }, [data, height, width]);
+  }, [data, height, width, step]);
 
   return (
     <div>
@@ -214,7 +245,20 @@ const Trace = () => {
         }}
       />
       <div>
-        {!loading ? <svg width={width} height={height} ref={svgRef} /> : null}
+        {!loading ? (
+          <>
+            <div className="fixed w-screen flex justify-center">
+              <input
+                type="range"
+                min={1}
+                max={data?.trace_exposure_over_time?.length || 1}
+                value={step}
+                onChange={(e) => setStep(parseInt(e.target.value))}
+              />
+            </div>
+            <svg width={width} height={height} ref={svgRef} />
+          </>
+        ) : null}
       </div>
       <div className="fixed bottom-0 right-0 rounded-tl-lg bg-gray-200 bg-opacity-50 px-6 py-3 max-w-lg font-mono text-sm leading-tight">
         This component will generate a tree showing the exposure contacts have

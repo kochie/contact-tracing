@@ -381,6 +381,39 @@ export class ContactTracingStack extends Stack {
         ],
       }
     );
+    const contactTracingOverTimeFunc = new GolangFunction(
+      this,
+      "trace-exposure-over-time-func",
+      {
+        entry: "lib/functions/trace_exposure_over_time/main.go",
+        vpc: vpc,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PRIVATE,
+        },
+        securityGroups: [securityGroup],
+        environment: {
+          TABLE_NAME: contact_table.tableName,
+          DAX_ENDPOINT: cache.attrClusterDiscoveryEndpoint,
+        },
+        timeout: Duration.minutes(15),
+        memorySize: 1024,
+        initialPolicy: [
+          new iam.PolicyStatement({
+            actions: ["dynamodb:Query"],
+            effect: iam.Effect.ALLOW,
+            resources: [
+              contact_table.tableArn,
+              `${contact_table.tableArn}/index/index_by_user`,
+            ],
+          }),
+          new iam.PolicyStatement({
+            actions: ["dax:*"],
+            effect: iam.Effect.ALLOW,
+            resources: ["*"],
+          }),
+        ],
+      }
+    );
     const lambda_role = new iam.Role(this, "LambdaRole", {
       assumedBy: new iam.ServicePrincipal("appsync.amazonaws.com"),
       inlinePolicies: {
@@ -393,6 +426,7 @@ export class ContactTracingStack extends Stack {
                 func.functionArn,
                 contactTracingTreeFunc.functionArn,
                 contactTracingFlatFunc.functionArn,
+                contactTracingOverTimeFunc.functionArn
               ],
             }),
           ],
@@ -479,6 +513,34 @@ export class ContactTracingStack extends Stack {
     );
     traceExposureFlatQueryResolver.addDependsOn(
       traceExposureFlatLambdaDataSource
+    );
+
+    const traceExposureOverTimeLambdaDataSource = new appsync.CfnDataSource(
+      this,
+      "traceExposureOverTimeLambdaDataSource",
+      {
+        apiId: api.attrApiId,
+        name: "traceExposureOverTimeLambdaDataSource",
+        type: "AWS_LAMBDA",
+        lambdaConfig: {
+          lambdaFunctionArn: contactTracingOverTimeFunc.functionArn,
+        },
+        serviceRoleArn: lambda_role.roleArn,
+      }
+    );
+    traceExposureOverTimeLambdaDataSource.addDependsOn(api_schema);
+    const traceExposureOverTimeQueryResolver = new appsync.CfnResolver(
+      this,
+      "traceExposureOverTimeQueryResolver",
+      {
+        apiId: api.attrApiId,
+        typeName: "Query",
+        fieldName: "trace_exposure_over_time",
+        dataSourceName: traceExposureOverTimeLambdaDataSource.name,
+      }
+    );
+    traceExposureOverTimeQueryResolver.addDependsOn(
+      traceExposureOverTimeLambdaDataSource
     );
 
     new CfnOutput(this, "api-url", {

@@ -50,12 +50,14 @@ type Flat {
     locations: [LocationFlat]
 }
 
+
 type Query {
     get_user_location_history(user_id: String!, from: AWSDateTime, until: AWSDateTime, nextToken: String, limit: Int): Output
     get_location_attendees(location_id: String!, from: AWSDateTime, until: AWSDateTime, nextToken: String, limit: Int): Output
     trace_exposure(user_id: String!, from: AWSDateTime, until: AWSDateTime): Exposures
     trace_exposure_tree(user_id: String!, from: AWSDateTime, until: AWSDateTime): User
     trace_exposure_flat(user_id: String!, from: AWSDateTime, until: AWSDateTime): Flat
+    trace_exposure_over_time(user_id: String!, from: AWSDateTime, until: AWSDateTime, step: Int, depth: Int): [Flat]
 }
 
 type Mutation {
