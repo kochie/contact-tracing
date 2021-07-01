@@ -26,7 +26,7 @@ function MyApp({ Component, pageProps }) {
     //  - If you're using www. for your domain, make sure you include that here.
     Fathom.load("JZRNKPYU", {
       includedDomains: ["ct.vercel.app"],
-      url: "https://kite.kochie.io"
+      // url: "https://kite.kochie.io"
     });
 
     function onRouteChangeComplete() {
