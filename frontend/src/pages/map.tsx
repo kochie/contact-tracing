@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import mapbox, { Popup } from "mapbox-gl";
 import { useLazyQuery } from "@apollo/client";
@@ -35,15 +35,15 @@ interface Graph {
 }
 
 const Map = () => {
-  const container = useRef<HTMLDivElement>(null);
   const [runQuery, { data, loading }] = useLazyQuery(TRACE_EXPOSURE_FLAT);
   const [map, setMap] = useState<mapbox.Map>();
   const [markers, setMarkers] = useState<mapbox.Marker[]>([]);
 
-  useEffect(() => {
+  const ref = useCallback((node: HTMLDivElement) => {
+    if (node === null) return 
     //   console.log(process.env.NEXT_PUBLIC_MAPBOX_TOKEN)
     const m = new mapbox.Map({
-      container: container.current, // container id
+      container: node, // container id
       style: "mapbox://styles/mapbox/streets-v11", // style URL
       center: [144.96332, -37.814], // starting position [lng, lat]
       zoom: 8, // starting zoom
@@ -60,6 +60,10 @@ const Map = () => {
     );
 
     setMap(m);
+
+    return () => {
+      m.remove()
+    }
   }, []);
 
   useEffect(() => {
@@ -115,7 +119,7 @@ const Map = () => {
               }
             />
             <div
-              ref={container}
+              ref={ref}
               className="w-screen"
               style={{ height: "calc(100vh - 64px)" }}
             />
