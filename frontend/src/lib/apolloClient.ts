@@ -35,6 +35,19 @@ const cache = new InMemoryCache({
             };
           },
         },
+        get_location_attendees: {
+          keyArgs: ["location_id", "from", "until"],
+          merge(
+            existing: Output = { items: [], nextToken: "" },
+            incoming: Output
+          ) {
+            // console.log("INCOMING", incoming)
+            return {
+              nextToken: incoming.nextToken,
+              items: [...existing.items, ...incoming.items],
+            };
+          },
+        },
       },
     },
   },

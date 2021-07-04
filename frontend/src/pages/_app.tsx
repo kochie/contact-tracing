@@ -1,14 +1,14 @@
 import React, { useEffect } from "react";
-import type { AppProps } from 'next/app'
+import type { AppProps } from "next/app";
 import { Auth } from "aws-amplify";
 import { ApolloProvider } from "@apollo/client";
 import { useApollo } from "../lib/apolloClient";
 import "tailwindcss/tailwind.css";
 import { useRouter } from "next/router";
 import * as Fathom from "fathom-client";
-import { DefaultSeo } from 'next-seo';
+import { DefaultSeo } from "next-seo";
 
-import SEO from '../lib/next-seo.config';
+import SEO from "../lib/next-seo.config";
 
 Auth.configure({
   userPoolId: process.env.NEXT_PUBLIC_USERPOOL_ID,
@@ -47,10 +47,10 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <>
-    <DefaultSeo {...SEO} />
-    <ApolloProvider client={apolloClient}>
-      <Component {...pageProps} />
-    </ApolloProvider>
+      <DefaultSeo {...SEO} />
+      <ApolloProvider client={apolloClient}>
+        <Component {...pageProps} />
+      </ApolloProvider>
     </>
   );
 }

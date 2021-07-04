@@ -19,7 +19,7 @@ const seo: DefaultSeoProps = {
   },
   twitter: {
     handle: "@kochie",
-//     site: "@site",
+    //     site: "@site",
     cardType: "summary_large_image",
   },
 };
