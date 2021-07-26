@@ -20,8 +20,6 @@ const seo: DefaultSeoProps = {
         url: `https://${
           process.env.NEXT_PUBLIC_VERCEL_URL || process.env.VERCEL_URL
         }/alina-grubnyak-VyqJqTYvoqA-unsplash.jpg`,
-        width: 640,
-        height: 426,
         alt: "alina-grubnyak-VyqJqTYvoqA-unsplash",
       },
     ],
