@@ -12,9 +12,9 @@ const seo: DefaultSeoProps = {
     images: [
       {
         url: "/alina-grubnyak-VyqJqTYvoqA-unsplash.jpg",
-        width: 0,
-        height: 0,
-        alt: "",
+        width: 640,
+        height: 426,
+        alt: "alina-grubnyak-VyqJqTYvoqA-unsplash",
       },
     ],
   },
