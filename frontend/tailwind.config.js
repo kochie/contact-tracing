@@ -1,19 +1,19 @@
 module.exports = {
   purge: [
-    './src/pages/**/*.{js,ts,jsx,tsx}',
-    './src/components/**/*.{js,ts,jsx,tsx}'
+    "./src/pages/**/*.{js,ts,jsx,tsx}",
+    "./src/components/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'media', // or 'media' or 'class'
+  darkMode: "media", // or 'media' or 'class'
   theme: {
     extend: {},
   },
   variants: {
     extend: {
-      borderColor: ['focus'],
-      backgroundColor: ['active'],
-      opacity: ['disabled'],
-      cursor: ['disabled']
+      borderColor: ["focus"],
+      backgroundColor: ["active"],
+      opacity: ["disabled"],
+      cursor: ["disabled"],
     },
   },
   plugins: [],
-}
+};

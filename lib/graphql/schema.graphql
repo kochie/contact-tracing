@@ -1,70 +1,99 @@
 type CheckIn {
-    location_id: String
-    user_id: String
-    checkin_datetime: AWSDateTime
+  location_id: String
+  user_id: String
+  checkin_datetime: AWSDateTime
 }
 
 type Output {
-    items: [CheckIn],
-    nextToken: String
+  items: [CheckIn]
+  nextToken: String
 }
 
 type Exposures {
-    users: [String]
-    locations: [String]
+  users: [String]
+  locations: [String]
 }
 
 type User {
-    user_id: String
-    contacts: [Location]
+  user_id: String
+  contacts: [Location]
 }
 
 type Location {
-    time: AWSDateTime
-    location_id: String
-    visitors: [User]
+  time: AWSDateTime
+  location_id: String
+  visitors: [User]
 }
 
 type LocationFlat {
-    location_id: String
-    latitude: String
-    longitude: String
+  location_id: String
+  latitude: String
+  longitude: String
 }
 
 type Node {
-    user_id: String
+  user_id: String
 }
 
 type Link {
-    source: String
-    target: String
-    time: String
-    location_id: String
-    latitude: String
-    longitude: String
+  source: String
+  target: String
+  time: String
+  location_id: String
+  latitude: String
+  longitude: String
 }
 
 type Flat {
-    nodes: [Node]
-    links: [Link]
-    locations: [LocationFlat]
+  nodes: [Node]
+  links: [Link]
+  locations: [LocationFlat]
 }
 
-
 type Query {
-    get_user_location_history(user_id: String!, from: AWSDateTime, until: AWSDateTime, nextToken: String, limit: Int): Output
-    get_location_attendees(location_id: String!, from: AWSDateTime, until: AWSDateTime, nextToken: String, limit: Int): Output
-    trace_exposure(user_id: String!, from: AWSDateTime, until: AWSDateTime): Exposures
-    trace_exposure_tree(user_id: String!, from: AWSDateTime, until: AWSDateTime): User
-    trace_exposure_flat(user_id: String!, from: AWSDateTime, until: AWSDateTime): Flat
-    trace_exposure_over_time(user_id: String!, from: AWSDateTime, until: AWSDateTime, step: Int, depth: Int): [Flat]
+  get_user_location_history(
+    user_id: String!
+    from: AWSDateTime
+    until: AWSDateTime
+    nextToken: String
+    limit: Int
+  ): Output
+  get_location_attendees(
+    location_id: String!
+    from: AWSDateTime
+    until: AWSDateTime
+    nextToken: String
+    limit: Int
+  ): Output
+  trace_exposure(
+    user_id: String!
+    from: AWSDateTime
+    until: AWSDateTime
+  ): Exposures
+  trace_exposure_tree(
+    user_id: String!
+    from: AWSDateTime
+    until: AWSDateTime
+  ): User
+  trace_exposure_flat(
+    user_id: String!
+    from: AWSDateTime
+    until: AWSDateTime
+  ): Flat
+  trace_exposure_over_time(
+    user_id: String!
+    from: AWSDateTime
+    until: AWSDateTime
+    step: Int
+    depth: Int
+  ): [Flat]
 }
 
 type Mutation {
-    check_in(location_id: String!, user_id: String!): CheckIn
+  check_in(location_id: String!, user_id: String!): CheckIn
 }
 
 type Schema {
-    query: Query
-    mutation: Mutation
+  query: Query
+  mutation: Mutation
 }

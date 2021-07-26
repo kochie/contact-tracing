@@ -17,16 +17,17 @@ const Login = ({
             email,
             password: "",
           }}
-          onSubmit={async (values, { setSubmitting }) => {
+          onSubmit={async (values, { setSubmitting, setErrors }) => {
             try {
               const user = await Auth.signIn({
                 username: values.email,
-                password: values.password
+                password: values.password,
               });
               console.log(user);
               await router.push("/");
             } catch (error) {
               console.log("error signing in", error);
+              setErrors({ email: error?.message || "" });
             } finally {
               setSubmitting(false);
             }
@@ -43,10 +44,7 @@ const Login = ({
           }) => (
             <form onSubmit={handleSubmit}>
               <div className="my-2 inline-block w-full">
-                <label
-                  htmlFor="email"
-                  className="mb-2 text-sm font-bold block"
-                >
+                <label htmlFor="email" className="mb-2 text-sm font-bold block">
                   Email
                 </label>
                 <input
@@ -59,6 +57,9 @@ const Login = ({
                   onBlur={handleBlur}
                   placeholder="Email"
                 />
+                <div className="text-sm text-red-600 mt-2">
+                  {errors.email && touched.email && errors.email}
+                </div>
               </div>
               <div className="my-2 inline-block w-full">
                 <label
@@ -95,7 +96,7 @@ const Login = ({
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
-    props: { email: context.query["email"] || "" }
+    props: { email: context.query["email"] || "" },
   };
 };
 

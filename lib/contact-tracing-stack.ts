@@ -426,7 +426,7 @@ export class ContactTracingStack extends Stack {
                 func.functionArn,
                 contactTracingTreeFunc.functionArn,
                 contactTracingFlatFunc.functionArn,
-                contactTracingOverTimeFunc.functionArn
+                contactTracingOverTimeFunc.functionArn,
               ],
             }),
           ],

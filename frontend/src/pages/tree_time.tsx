@@ -19,6 +19,8 @@ import Auth from "@aws-amplify/auth";
 import { TopBar } from "../components/TopBar";
 import SearchBox from "../components/SearchBox";
 import { TRACE_EXPOSURE_OVER_TIME } from "../queries/trace_exposure_over_time";
+import { useAuth } from "../lib/authHook";
+import NoAuth from "../components/NoAuth";
 
 interface Link {
   location_id: string;
@@ -46,9 +48,9 @@ const Trace = () => {
   const [width, setWidth] = useState(800);
   const [height, setHeight] = useState(400);
   const [dateRange, setDateRange] = useState([
-    (new Date()).toJSON(), 
-    (new Date()).toJSON()
-  ])
+    new Date().toJSON(),
+    new Date().toJSON(),
+  ]);
 
   const resize = () => {
     setWidth(window.innerWidth);
@@ -232,49 +234,64 @@ const Trace = () => {
 
   const x = scaleTime()
     .domain([new Date(dateRange[0]), new Date(dateRange[1])])
-    .range([1, data?.trace_exposure_over_time?.length || 1])
+    .range([1, data?.trace_exposure_over_time?.length || 1]);
+
+  const [isAuth] = useAuth();
 
   return (
     <div>
       <TopBar />
-      <SearchBox
-        loading={loading}
-        onSubmit={(userId, from, until) => {
-          setDateRange([from, until])
-          runQuery({
-            variables: {
-              user_id: userId,
-              from,
-              until,
-            },
-          });
-        }}
-      />
-      <div>
-        {!loading ? (
-          <>
-            <div className="fixed w-screen flex justify-center">
-              <div className="flex flex-col text-center">
-                <input
-                  type="range"
-                  min={1}
-                  max={data?.trace_exposure_over_time?.length || 1}
-                  value={step}
-                  onChange={(e) => setStep(parseInt(e.target.value))}
-                />
-                <div>{x.invert(step).toDateString()}</div>
-              </div>
-            </div>
-            <svg width={width} height={height} ref={svgRef} />
-          </>
-        ) : null}
-      </div>
-      <div className="fixed bottom-0 right-0 rounded-tl-lg bg-gray-200 bg-opacity-50 px-6 py-3 max-w-lg font-mono text-sm leading-tight">
-        This component will generate a tree showing the exposure contacts have
-        with each other. The colours of the edges indicate locations, if edges
-        of the same node have the same colour then it means the exposure
-        happened at the same location.
-      </div>
+      {isAuth ? (
+        <>
+          <SearchBox
+            loading={loading}
+            onSubmit={(userId, from, until) => {
+              setDateRange([from, until]);
+              runQuery({
+                variables: {
+                  user_id: userId,
+                  from,
+                  until,
+                },
+              });
+            }}
+          />
+          <div>
+            {!loading ? (
+              <>
+                <div className="fixed w-screen flex justify-center mt-5">
+                  <div className="flex flex-col text-center">
+                    <input
+                      type="range"
+                      min={1}
+                      max={data?.trace_exposure_over_time?.length || 1}
+                      value={step}
+                      onChange={(e) => setStep(parseInt(e.target.value))}
+                    />
+                    <div>{x.invert(step).toDateString()}</div>
+                  </div>
+                </div>
+                <svg width={width} height={height} ref={svgRef} />
+              </>
+            ) : null}
+          </div>
+          <div className="fixed bottom-0 right-0 rounded-tl-lg bg-gray-200 bg-opacity-50 px-6 py-3 max-w-lg font-mono text-sm leading-tight">
+            <p>
+              This component will generate a tree showing the exposure contacts
+              have with each other.<p></p>The colours of the edges indicate
+              locations, if edges of the same node have the same colour then it
+              means the exposure happened at the same location.
+            </p>
+            <p>
+              You can use the slider to see how the exposed group grows over
+              time. Red verticies indicate new users that were infected during
+              the last step (in this case 24 hours).
+            </p>
+          </div>
+        </>
+      ) : (
+        <NoAuth />
+      )}
     </div>
   );
 };

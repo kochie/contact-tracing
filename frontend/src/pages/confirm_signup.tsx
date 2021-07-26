@@ -17,14 +17,15 @@ const Confirm = ({
             email,
             code: "",
           }}
-          onSubmit={async (values, { setSubmitting }) => {
+          onSubmit={async (values, { setSubmitting, setErrors }) => {
             try {
               const user = await Auth.confirmSignUp(values.email, values.code);
 
-              console.log(user);
+              // console.log(user);
               await router.push(`/login?email=${values.email}`);
             } catch (error) {
               console.log("error signing in", error);
+              setErrors({ email: error?.message || "" });
             } finally {
               setSubmitting(false);
             }
@@ -41,10 +42,7 @@ const Confirm = ({
           }) => (
             <form onSubmit={handleSubmit}>
               <div className="my-2 inline-block w-full">
-                <label
-                  htmlFor="email"
-                  className="mb-2 text-sm font-bold block"
-                >
+                <label htmlFor="email" className="mb-2 text-sm font-bold block">
                   Email
                 </label>
                 <input
@@ -57,6 +55,9 @@ const Confirm = ({
                   onBlur={handleBlur}
                   placeholder={"Enter Email"}
                 />
+                <div className="text-sm text-red-600 mt-2">
+                  {errors.email && touched.email && errors.email}
+                </div>
               </div>
               <div className="my-2 inline-block w-full">
                 <label
@@ -79,7 +80,7 @@ const Confirm = ({
               <div className="mt-8 inline-block w-full">
                 <input
                   type="submit"
-                  value="Confirm SignUp"
+                  value="Confirm Signup"
                   className="w-full rounded bg-green-300 text-white text-center font-bold py-1 cursor-pointer hover:bg-green-400 transform-gpu duration-200 border-2 border-green-500 active:bg-green-700"
                 />
               </div>
@@ -93,7 +94,7 @@ const Confirm = ({
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
-    props: { email: context.query["email"] || "" }
+    props: { email: context.query["email"] || "" },
   };
 };
 

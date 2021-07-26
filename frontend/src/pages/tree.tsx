@@ -1,13 +1,31 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLazyQuery } from "@apollo/client";
 import { TRACE_EXPOSURE_FLAT } from "../queries/trace_exposure_flat";
-import { linkRadial, select, stratify, tree } from "d3";
+import {
+  select,
+  drag,
+  hierarchy,
+  forceX,
+  forceY,
+  forceManyBody,
+  forceLink,
+  forceSimulation,
+  stratify,
+  scaleOrdinal,
+  schemeSpectral,
+  max,
+  interpolateSinebow,
+} from "d3";
 import { cloneDeep } from "@apollo/client/utilities";
 import Auth from "@aws-amplify/auth";
 import { TopBar } from "../components/TopBar";
 import SearchBox from "../components/SearchBox";
+import NoAuth from "../components/NoAuth";
+import { useAuth } from "../lib/authHook";
 
-// const margin = { top: 10, right: 30, bottom: 30, left: 40 };
+// const margin = {top: 10, right: 30, bottom: 30, left: 40}
+// const width = 800
+// const height = 400
 
 interface Link {
   location_id: string;
@@ -16,23 +34,23 @@ interface Link {
   target: string;
 }
 
+interface Node {
+  user_id: string;
+}
+
 interface Graph {
   links: Link[];
-  nodes: {
-    user_id: string;
-  }[];
+  nodes: Node[];
 }
 
 const Trace = () => {
   const [runQuery, { data, loading }] = useLazyQuery(TRACE_EXPOSURE_FLAT);
   const svgRef = useRef<SVGSVGElement>(null);
-  const tooltip = useRef<HTMLDivElement>(null);
 
   const [width, setWidth] = useState(800);
   const [height, setHeight] = useState(400);
 
   const resize = () => {
-    // console.log("eh")
     setWidth(window.innerWidth);
     setHeight(window.innerHeight - 64);
   };
@@ -40,10 +58,6 @@ const Trace = () => {
   useEffect(() => {
     window.addEventListener("resize", resize);
     resize();
-
-    return () => {
-      window.removeEventListener("resize", resize);
-    };
   }, []);
 
   useEffect(() => {
@@ -56,152 +70,176 @@ const Trace = () => {
   useEffect(() => {
     if (!data) return;
     if (!svgRef.current) return;
-    if (!tooltip.current) return;
 
-    // console.log("hello", data);
+    // console.log("hello", data)
     const graph: Graph = cloneDeep(data.trace_exposure_flat);
+
     const strat = stratify<Link>()
       .id((d) => d.target)
       .parentId((d) => d.source);
 
     const rootUser = graph.nodes[0];
 
-    const svg = select(svgRef.current)
-      .attr("width", width)
-      .attr("height", height)
-      .append("g")
-      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
-
-    const treeBuilder = tree<Link>()
-      .size([2 * Math.PI, Math.min(height, width) / 2 - 10])
-      .separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth);
-
     const s = strat([
       { source: "", target: rootUser.user_id, location_id: "", time: "" },
       ...graph.links,
     ]);
-    const root = treeBuilder(s);
 
-    var div = select(tooltip.current)
-      //  .attr("class", "tooltip")
-      .style("opacity", 0);
+    // console.log("IS_CYCLIC", isCyclic(graph.links))
 
-    svg
-      .append("g")
-      .attr("fill", "none")
-      .attr("stroke", "#555")
-      .attr("stroke-opacity", 0.4)
-      .attr("stroke-width", 1.5)
-      .selectAll("path")
-      .data(root.links())
-      .join("path")
-      .attr(
-        "d",
+    const svg = select(svgRef.current)
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [-width / 2, -height / 2, width, height].join(" "))
+      .append("g");
+    // .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    const dragSimulation = (simulation) => {
+      function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+
+      function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
+
+      return drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
+    };
+
+    const root = hierarchy(s);
+    const links = root.links();
+    const nodes = root.descendants();
+
+    // const scheme = schemeSpectral[11]
+    // console.log(scheme)
+    // const color = scaleOrdinal()
+    // .domain(graph.links.map(d => d.location_id))
+    // .range(interpolateSinebow)
+    // .unknown("#ccc")
+
+    // @ts-expect-error
+    const simulation = forceSimulation(nodes)
+      .force(
+        "link",
         // @ts-expect-error
-        linkRadial()
+        forceLink(links)
           // @ts-expect-error
-          .angle((d) => d.x)
-          // @ts-expect-error
-          .radius((d) => d.y)
+          .id((d) => d.id)
+          .distance(0)
+          .strength(1)
       )
-      .on("mouseover", function (d, i) {
-        select(this).transition().duration(100).attr("stroke-width", 3);
-        div.transition().duration(100).style("opacity", 1);
-        // mouse(this)
-        // console.log(i)
+      .force("charge", forceManyBody().strength(-60))
+      .force("x", forceX())
+      .force("y", forceY());
 
-        div
-          .html(() => {
-            const x = graph.links.find(
-              (link) =>
-                link.source === i.source.id && link.target === i.target.id
-            );
-            // console.log(Date.parse(x.time).toLocaleString('en'))
+    const locationMax = max(graph.links.map((l) => parseInt(l.location_id)));
 
-            return (
-              "<div>Location ID: " +
-              x.location_id +
-              "</div><div>DateTime: " +
-              new Date(x.time).toLocaleString("en-AU", {
-                timeZone: "Australia/Melbourne",
-              }) +
-              "</div>"
-            );
-          })
-          .style("left", d.pageX + 10 + "px")
-          .style("top", d.pageY - 15 + "px");
-      })
-      .on("mouseout", function (d, i) {
-        select(this).transition().duration(200).attr("stroke-width", 1.5);
-        div.transition().duration(200).style("opacity", 0);
-      });
-
-    svg
+    const link = svg
       .append("g")
-      .selectAll("circle")
-      .data(root.descendants())
-      .join("circle")
-      .attr(
-        "transform",
-        (d) => `
-            rotate(${(d.x * 180) / Math.PI - 90})
-            translate(${d.y},0)
-            `
-      )
-      .attr("fill", (d) => (d.children ? "#555" : "#999"))
-      .attr("r", 2.5)
-      .on("mouseover", function (d, i) {
-        select(this).transition().duration(100).attr("r", 5);
-        div.transition().duration(100).style("opacity", 1);
-        // mouse(this)
-        // console.log(i)
-        div
-          .html("User ID: " + i.id)
-          .style("left", d.pageX + 10 + "px")
-          .style("top", d.pageY - 15 + "px");
-      })
-      .on("mouseout", function (d, i) {
-        select(this).transition().duration(200).attr("r", 2.5);
-        div.transition().duration(200).style("opacity", 0);
+      .attr("stroke", "#999")
+      .attr("stroke-opacity", 0.7)
+      .attr("stroke-width", "2")
+      .selectAll("line")
+      .data(links)
+      .join("line")
+      .attr("stroke", (d) => {
+        // console.log(d)
+        const line = graph.links.find(
+          (l) => l.source === d.source.data.id && l.target === d.target.data.id
+        );
+        return interpolateSinebow(parseInt(line.location_id) / locationMax);
       });
+
+    const node = svg
+      .append("g")
+      .attr("fill", "#fff")
+      .attr("stroke", "#000")
+      .attr("stroke-width", 1.5)
+      .selectAll("circle")
+      .data(nodes)
+      .join("circle")
+      .attr("fill", (d) => (d.children ? null : "#000"))
+      .attr("stroke", (d) => (d.children ? null : "#fff"))
+      .attr("r", 4.5)
+      // @ts-expect-error
+      .call(dragSimulation(simulation));
+
+    node.append("title").text((d) => "UserID: " + d.data.id);
+
+    simulation.on("tick", () => {
+      link
+        // @ts-expect-error
+        .attr("x1", (d) => d.source.x)
+        // @ts-expect-error
+        .attr("y1", (d) => d.source.y)
+        // @ts-expect-error
+        .attr("x2", (d) => d.target.x)
+        // @ts-expect-error
+        .attr("y2", (d) => d.target.y);
+
+      // @ts-expect-error
+      node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+    });
+
+    // invalidation.then(() => simulation.stop());
 
     return () => {
       svg.selectAll("*").remove();
     };
-  }, [data, width, height]);
+  }, [data, height, width]);
 
-  const getData = (userId: string, from: string, until: string) => {
-    runQuery({
-      variables: {
-        user_id: userId,
-        from,
-        until,
-      },
-    });
-  };
+  const [isAuth] = useAuth();
 
   return (
     <div>
       <TopBar />
-      <SearchBox
-        loading={loading}
-        onSubmit={(userId, from, until) => getData(userId, from, until)}
-      />
-      <div className="overflow-hidden h-screen">
-        {!loading ? (
-          <>
-            <svg width={width} height={height} ref={svgRef} />
-            <div
-              ref={tooltip}
-              className="absolute text-center p-1 bg-gray-400 text-white rounded pointer-events-none"
-            />
-          </>
-        ) : (
-          <div className="w-full text-center h-36 font-extrabold text-4xl transform-gpu translate-y-1/2">
-            Loading
+      {isAuth ? (
+        <>
+          <SearchBox
+            loading={loading}
+            onSubmit={(userId, from, until) => {
+              runQuery({
+                variables: {
+                  user_id: userId,
+                  from,
+                  until,
+                },
+              });
+            }}
+          />
+          <div>
+            {!loading ? (
+              <svg width={width} height={height} ref={svgRef} />
+            ) : null}
           </div>
-        )}
-      </div>
+          <div className="fixed bottom-0 right-0 rounded-tl-lg bg-gray-200 bg-opacity-50 px-6 py-3 max-w-lg font-mono text-sm leading-tight">
+            <p>
+              This component will generate a tree showing the exposure contacts
+              have with each other.
+            </p>
+            <p>
+              {" "}
+              The colours of the edges indicate locations, if edges of the same
+              node have the same colour then it means the exposure happened at
+              the same location.
+            </p>
+          </div>
+        </>
+      ) : (
+        <NoAuth />
+      )}
     </div>
   );
 };
