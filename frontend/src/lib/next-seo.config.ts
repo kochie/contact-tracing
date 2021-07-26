@@ -6,11 +6,12 @@ const seo: DefaultSeoProps = {
     locale: "en_AU",
     url: "https://ct.vercel.app/",
     site_name: "Contact Trace",
-    title: "Open Graph Title",
-    description: "Open Graph Description",
+    title: "Contact Tracing",
+    description:
+      "A technology demonstration website to showcase a proof of concept contact tracing application using the AWS Cloud Development Kit.",
     images: [
       {
-        url: "",
+        url: "/alina-grubnyak-VyqJqTYvoqA-unsplash.jpg",
         width: 0,
         height: 0,
         alt: "",
@@ -19,7 +20,7 @@ const seo: DefaultSeoProps = {
   },
   twitter: {
     handle: "@kochie",
-//     site: "@site",
+    //     site: "@site",
     cardType: "summary_large_image",
   },
 };
