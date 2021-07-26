@@ -11,7 +11,7 @@ const seo: DefaultSeoProps = {
       "A technology demonstration website to showcase a proof of concept contact tracing application using the AWS Cloud Development Kit.",
     images: [
       {
-        url: "/alina-grubnyak-VyqJqTYvoqA-unsplash.jpg",
+        url: `https://${process.env.NEXT_PUBLIC_VERCEL_URL || process.env.VERCEL_URL}/alina-grubnyak-VyqJqTYvoqA-unsplash.jpg`,
         width: 640,
         height: 426,
         alt: "alina-grubnyak-VyqJqTYvoqA-unsplash",
